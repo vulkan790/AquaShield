@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
@@ -19,7 +20,7 @@ async def delete_command(message: Message, state: FSMContext):
     await message.answer("Какой тип устройства вы хотите удалить?",
                          reply_markup=await kb.choose_device_type())
 
-@router.callback_query(F.data.in_(["sensor", "hub"]))
+@router.callback_query(DeleteDevice.waiting_device_type, F.data.in_(["sensor", "hub"]))
 async def got_device_type(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hub_id = data.get("hub_id")
@@ -34,7 +35,9 @@ async def got_device_type(callback: CallbackQuery, state: FSMContext):
         #TODO сделать клаву для выбора хаба
         await callback.message.edit_text("Такое пока не умею")
 
-@router.callback_query(F.data.startswith("sensor_"))
+
+
+@router.callback_query(DeleteDevice.waiting_device_id, F.data.startswith("sensor_"))
 async def got_sensor_id(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hub_id = data.get("hub_id")
@@ -47,9 +50,10 @@ async def got_sensor_id(callback: CallbackQuery, state: FSMContext):
     if (device_type == "sensor"):
         msg = await get_sensor_settings(hub_id, callback.data[7:])
         await callback.message.edit_text("Вы действительно хотите удалить этот датчик?\nД" + msg[15:],
+                                         parse_mode=ParseMode.HTML,
                                          reply_markup=await kb.confirm_menu())
 
-@router.callback_query(F.data.in_(["confirm", "cancellation"]))
+@router.callback_query(DeleteDevice.waiting_confirm, F.data.in_(["confirm", "cancellation"]))
 async def delete_confirm(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hub_id = data.get("hub_id")
@@ -66,8 +70,8 @@ async def delete_confirm(callback: CallbackQuery, state: FSMContext):
         else:
             pass
 
-        await callback.message.edit_text(
+        await callback.message.answer(
             "Устройство успешно удалено" if result else "Произошла ошибка во время удаления")
 
     else:
-        await callback.message.edit_text("Удаление отменено")
+        await callback.message.answer("Удаление отменено")
