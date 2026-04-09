@@ -26,7 +26,7 @@ async def settings_command(message: Message, state: FSMContext):
     await message.answer("Какой из датчиков вы хотите настроить?",
                          reply_markup=await kb.choose_sensor(hub_id))
 
-@router.callback_query(F.data.startswith("sensor_"))
+@router.callback_query(ChangeSettings.choose_sensor, F.data.startswith("sensor_"))
 async def selected_sensor(callback: CallbackQuery, state: FSMContext):
     sensor_id = match(r"^sensor_(\d+)$", callback.data).group(1)
 
@@ -41,19 +41,7 @@ async def selected_sensor(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ChangeSettings.choose_setting)
     await state.update_data(hub_id=hub_id, sensor_id=sensor_id)
 
-@router.callback_query(ChangeSettings.choose_sensor, F.data.startswith("page_"))
-async def change_sensor_page(callback: CallbackQuery, state: FSMContext):
-    page = int(callback.data.split("_")[1])
-    data = await state.get_data()
-    hub_id = data.get('hub_id')
-    if hub_id is None:
-        await callback.answer("Ошибка: не найден хаб", show_alert=True)
-        return
-    keyboard = await kb.choose_sensor(hub_id, page=page)
-    await callback.message.edit_reply_markup(reply_markup=keyboard)
-    await callback.answer()
-
-@router.callback_query(F.data.in_(["alert", "overlap", "location"]))
+@router.callback_query(ChangeSettings.choose_setting, F.data.in_(["alert", "overlap", "location"]))
 async def selected_settings(callback: CallbackQuery, state: FSMContext):
     await callback.answer("")
     data = await state.get_data()
@@ -99,6 +87,7 @@ async def got_new_overlap(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ChangeSettings.confirm)
     await show_confirmation(callback.message, state)
     await callback.answer()
+
 
 async def show_confirmation(message: Message, state: FSMContext):
     data = await state.get_data()
