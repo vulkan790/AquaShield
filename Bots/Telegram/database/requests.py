@@ -1,8 +1,10 @@
+from sqlalchemy.sql.sqltypes import NULLTYPE
+
 from database.models import async_session
 from database.models import Sensor, Hub
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
-async def is_available(hub_id, tg_id=None, vk_id=None) -> str:
+async def is_available(hub_id, tg_id=None, vk_id=None):
     async with async_session() as session:
         hub = await session.get(Hub, hub_id)
 
@@ -182,3 +184,23 @@ async def delete_sensor(hub_id: int, ind: int ) -> bool:
         )
         await session.commit()
         return result.rowcount > 0
+
+async def disconnect_hub(hub_id: int) -> bool:
+    async with async_session() as session:
+        hub = await session.get(Hub, hub_id)
+
+        if not hub:
+            raise ValueError("Хаб не найден")
+        if hub.tg_id != "NULL":
+            raise ValueError("Хаб уже привязан к другому пользователю")
+
+        hub.tg_id = NULLTYPE
+        hub.vk_id = NULLTYPE
+
+        result = await session.execute(
+            delete(Sensor)
+            .where(Sensor.hub_id == hub_id)
+        )
+        
+        await session.commit()
+        return result
