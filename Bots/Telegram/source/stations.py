@@ -9,10 +9,9 @@ class WorkStates(StatesGroup):
     start = State()
     ready = State()
 
-class ConnectHub(StatesGroup):
+class ConnectDevice(StatesGroup):
+    wait_device_type = State()
     wait_hub_id = State()
-
-class ConnectSensor(StatesGroup):
     wait_sensor_id = State()
     wait_location = State()
     wait_water_threshold = State()
