@@ -24,18 +24,24 @@ async def delete_command(message: Message, state: FSMContext):
 async def got_device_type(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     hub_id = data.get("hub_id")
-    await state.set_state(DeleteDevice.waiting_device_id)
-    await state.update_data(hub_id = hub_id)
-    await state.update_data(type = callback.data)
 
     if callback.data == "sensor" and hub_id:
+        await state.set_state(DeleteDevice.waiting_device_id)
+        await state.update_data(hub_id=hub_id)
+        await state.update_data(type=callback.data)
+
         await callback.message.edit_text("Датчик с каким идентификатором вы хотите удалить?",
                          reply_markup=await kb.choose_sensor(hub_id))
+    elif callback.data == "hub" and hub_id:
+        await state.set_state(DeleteDevice.waiting_confirm)
+        await state.update_data(hub_id=hub_id)
+        await state.update_data(type=callback.data)
+
+        await callback.message.edit_text(
+            text="Вы действительно хотите удалить этот хаб со всеми прикреплёнными к нему датчиками?",
+            reply_markup=await kb.confirm_menu())
     else:
-        #TODO сделать клаву для выбора хаба
-        await callback.message.edit_text("Такое пока не умею")
-
-
+        await callback.message.edit_text("Ошибка")
 
 @router.callback_query(DeleteDevice.waiting_device_id, F.data.startswith("sensor_"))
 async def got_sensor_id(callback: CallbackQuery, state: FSMContext):
@@ -63,15 +69,15 @@ async def delete_confirm(callback: CallbackQuery, state: FSMContext):
     await state.update_data(hub_id=hub_id)
 
     if (callback.data == "confirm"):
-        result = False
 
         if (device_type == "sensor"):
             result = await rq.delete_sensor(hub_id, sensor_id)
         else:
-            pass
+            result = await rq.disconnect_hub(hub_id)
 
         await callback.message.answer(
-            "Устройство успешно удалено" if result else "Произошла ошибка во время удаления")
+            "Устройство успешно удалено." if result else "Произошла ошибка во время удаления"
+        )
 
     else:
         await callback.message.answer("Удаление отменено")
