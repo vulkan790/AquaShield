@@ -54,7 +54,7 @@ async def got_sensor_id(callback: CallbackQuery, state: FSMContext):
     await state.update_data(sensor_id=callback.data[7:])
 
     if (device_type == "sensor"):
-        msg = await get_sensor_settings(hub_id, callback.data[7:])
+        msg = await get_sensor_settings(hub_id=hub_id, sensor_id=callback.data[7:])
         await callback.message.edit_text("Вы действительно хотите удалить этот датчик?\nД" + msg[15:],
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=await kb.confirm_menu())
