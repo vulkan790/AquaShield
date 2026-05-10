@@ -1,4 +1,4 @@
-#define DEBUG_HUB
+#define DEBUG_HUB   // раскомментировать для отладочного вывода
 
 #include <cstdint>
 #include <WiFi.h>
@@ -63,7 +63,7 @@ struct st_snsr_cfg_msg
 struct st_rly_msg
 {
 	uint16_t  rid;
-    uint8_t   data;
+    uint8_t   data;      // 1 = закрыть, 0 = открыть
     uint8_t   crc;
 };
 
