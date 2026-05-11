@@ -3,15 +3,16 @@
 
 // ============================ //
 // PINS SECTION                 //
-#define   p_led       2
-#define   p_bzr       4
+#define   p_led       5
+#define   p_bzr       15
 
 #define   p_btr       35
 #define   p_wtr       34
+#define   p_wtr_en    18
 
-#define   p_tx        15
+#define   p_tx        2
 #define   p_tx_en     14
-#define   p_rx        5
+#define   p_rx        4
 
 #define   p_init_btn  23
 // PINS SECTION                 //
@@ -150,13 +151,12 @@ void setup()
 #ifdef DEBUG_SENSOR
     int64_t _temp_time1;
     int64_t _temp_time2;
-    int64_t start_time = millis();
     unsigned long current_time;
 
     current_time = millis();
     _temp_time1 = millis();
 #endif
-
+    int64_t start_time = millis();
     setup_pins();
 
 #ifdef DEBUG_SENSOR
@@ -223,8 +223,8 @@ void setup()
                 millis(), _temp_time2 - _temp_time1);
 #endif
 
-    delta_time = delta_time - (end_time - start_time + 2) - c_sleep_time;
     int64_t end_time = millis();
+    delta_time = delta_time - (end_time - start_time + 2) - c_sleep_time;
 #ifdef DEBUG_SENSOR
     int64_t end_time = millis();
     Serial.printf("[setup] %lums: delta_time = %lld\n", end_time, delta_time);
@@ -340,9 +340,9 @@ void _init()
     _debug_msg = String(202) + ": Init messagge #" + String(cm_pos) + "[" + String(smsg.val, HEX) + "]";
     Serial.println(_debug_msg);
 #endif 
-                    bsmg.val |= smsg.srm.data;
+                    bmsg.val |= smsg.srm.data;
                     cm_pos++;
-                    bsmg.val <<= 1;
+                    bmsg.val <<= 1;
                 }
             }
 
@@ -446,9 +446,9 @@ void _start_cfg()
     _debug_msg = String(202) + ": Init messagge #" + String(cm_pos) + "[" + String(smsg.val, HEX) + "]";
     Serial.println(_debug_msg);
 #endif 
-                    bsmg.val |= smsg.srm.data;
+                    bmsg.val |= smsg.srm.data;
                     cm_pos++;
-                    bsmg.val <<= 1;
+                    bmsg.val <<= 1;
                 }
             }
 
