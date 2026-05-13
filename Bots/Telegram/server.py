@@ -2,18 +2,43 @@ import requests
 import sqlite3
 import uvicorn
 import logging
+
+from aiogram.types import location
 from fastapi import FastAPI, HTTPException
 from config import TOKEN
-from database.requests import get_tg, get_vk, get_sensors
+import database.requests as rq
 
 app = FastAPI()
 
 @app.get("/sensor/alert/leak")
 async def sensor_leak(hub_id, sensor_id):
+    if not hub_id or not sensor_id:
+        raise HTTPException(status_code=400, detail="hub_id is required")
+
+    chat_id = await rq.get_tg(hub_id)
+    sensor = await rq.get_sensor(hub_id, sensor_id)
+
+    if not chat_id or not sensor:
+        return {"status": "error", "error" : "No tg chat or hub"}
+
+    response = requests.post(
+    f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+    json={
+        "chat_id": chat_id,
+        "text": f"🚨 ДАТЧИК #{sensor_id}\nМестоположение: {sensor.location}\nОбнаружена протечка воды!",
+        "parse_mode": "HTML"
+    },
+    timeout=5
+    )
+
+    return {"status": "received", "leak": "true"}
+
+@app.get("/sensor/alert/dry")
+async def relay_worked(hub_id):
     if not hub_id:
         raise HTTPException(status_code=400, detail="hub_id is required")
 
-    chat_id = await get_tg(hub_id)
+    chat_id = await rq.get_tg(hub_id)
 
     if not chat_id:
         return {"status": "error", "error" : "No tg chat or hub"}
@@ -22,20 +47,20 @@ async def sensor_leak(hub_id, sensor_id):
     f"https://api.telegram.org/bot{TOKEN}/sendMessage",
     json={
         "chat_id": chat_id,
-        "text": f"🚨 ДАТЧИК #{sensor_id}\nОбнаружена протечка воды!",
+        "text": f"🔧 Вода перекрыта!",
         "parse_mode": "HTML"
     },
     timeout=5
     )
 
-    return {"status": "received", "leak": "true"}
+    return {"status": "received", "leak": "false"}
 
 @app.get("/sensor/alert/battery")
 async def sensor_battery(hub_id, sensor_id):
     if not hub_id:
         raise HTTPException(status_code=400, detail="hub_id is required")
 
-    chat_id = await get_tg(hub_id)
+    chat_id = await rq.get_tg(hub_id)
 
     if not chat_id:
         return {"status": "error", "error" : "No tg chat or hub"}
@@ -58,7 +83,7 @@ async def get_sensors_configuration(hub_id):
         raise HTTPException(status_code=400, detail="hub_id is required")
 
     try:
-        sensors = await get_sensors(hub_id)
+        sensors = await rq.get_sensors(hub_id)
 
         sensors_data = {
             "hub_id": hub_id,
